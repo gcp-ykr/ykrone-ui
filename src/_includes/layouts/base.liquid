@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<!-- v20250630.1-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ resumeData.name }} | {{ resumeData.jobTitle }}</title>
+    <link rel="stylesheet" href="{{ env.cssStyleSheetFile }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+      /* CSS for the floating visitor counter */
+      .visitor-counter {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #2c3e50;
+        color: #ecf0f1;
+        padding: 10px 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        font-family: 'Lato', sans-serif;
+        font-size: 14px;
+        z-index: 1000;
+        text-align: center;
+      }
+      .visitor-counter .count {
+        font-size: 1.5em;
+        font-weight: 700;
+        display: block;
+      }
+      .visitor-counter .since-date {
+        font-size: 0.8em;
+        display: block;
+        color: #bdc3c7;
+      }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {{ content }}
+    </div>
+
+    <div id="visitorCounter" class="visitor-counter">
+      <span id="visitCount" class="count">...</span>
+      <span id="sinceDate" class="since-date">Loading...</span>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        // --- HELP FUNCTIONS ---
+        function extractYear(dateString) {
+          // Define a regular expression to validate the YYYY-MM-DD format
+          const regex = /^\d{4}-\d{2}-\d{2}$/;
+
+          // Check if the date string matches the format
+          if (regex.test(dateString)) {
+            // Extract and return the year
+            return dateString.split('-')[0];
+          } else {
+            // Return N/A if format is invalid
+            return 'N/A';
+          }
+        }
+
+        // --- CONFIGURATION ---
+        // !!! IMPORTANT: Replace this with your actual backend API URL !!!
+        const YOUR_BACKEND_API_URL = '{{ env.backendApiUrl }}';
+        const backendApiUrl = YOUR_BACKEND_API_URL;
+        const counterEndpoint = `${backendApiUrl}/visitcounter`;
+        const visitRecordEndpoint = `${backendApiUrl}/visitrec`;
+
+        // This gets the page name from the frontmatter of index.liquid or 404.liquid
+        const sourcePage = '{{ sourcePage | default: "unknown-page" }}';
+        const localStorageKey = `visitorId-${sourcePage}`;
+
+        /**
+         * Checks if the user is new. If so, it sends their info to the backend.
+         */
+        const handleNewVisit = async () => {
+          const existingVisitorId = localStorage.getItem(localStorageKey);
+          
+          // Enable to debug visit recording in backend
+          //const existingVisitorId = null
+
+          // If a visitor ID already exists for this page, do nothing.
+          if (existingVisitorId) {
+            console.log('Returning visitor for this page.');
+            return;
+          }
+
+          // If no ID exists, this is a new visit.
+          console.log('New visitor detected. Logging visit...');
+
+          const newVisitorId = `visitor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const timestamp = new Date().toISOString();
+
+          const visitData = {
+            visitor_id: newVisitorId,
+            source: sourcePage,
+            timestamp: timestamp
+          };
+
+          try {
+            const response = await fetch(visitRecordEndpoint, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(visitData),
+            });
+
+            if (!response.ok) {
+              throw new Error(`API POST request failed with status ${response.status}`);
+            }
+
+            // On success, store the new ID in local storage to prevent re-counting
+            localStorage.setItem(localStorageKey, newVisitorId);
+            console.log('Visit logged successfully.');
+
+          } catch (error) {
+            console.error('Error logging new visit:', error);
+          }
+        };
+
+        /**
+         * Fetches the current count from the backend and displays it.
+         */
+        const displayCounter = async () => {
+          const visitCountElement = document.getElementById('visitCount');
+          const sinceDateElement = document.getElementById('sinceDate');
+
+          try {
+            // Note: We use a query parameter for the GET request as it's the standard.
+            const response = await fetch(`${counterEndpoint}?source=${sourcePage}`, {
+              method: 'GET',
+              content: 'application/json'
+            });
+            
+            if (!response.ok) {
+              throw new Error(`API GET request failed with status ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            visitTxt = data.visit_count > 1 ? "visits":"visit";
+            visitCountElement.textContent = `${data.visit_count} ${visitTxt}` || 'N/A';
+            sinceDateElement.textContent = `Since: ${extractYear(data.since_date) || '...'}`;
+
+          } catch (error) {
+            console.error('Error fetching visitor count:', error);
+            visitCountElement.textContent = 'N/A visits';
+            sinceDateElement.textContent = 'Could not load visits data';
+          }
+        };
+
+        // Run the logic
+        handleNewVisit().then(() => {
+            // We call displayCounter after attempting to log the visit,
+            // ensuring the count is as up-to-date as possible.
+            displayCounter();
+        });
+      });
+    </script>
+</body>
+</html>

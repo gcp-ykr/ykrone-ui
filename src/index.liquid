@@ -1,0 +1,103 @@
+---
+layout: layouts/base.liquid
+permalink: /index.html
+sourcePage: "resume-site"
+---
+<header class="header">
+    <img src="{{ env.headerResumeImageFile }}" alt="Yuseff Kassem Resume" width="100" height="100" class="header-image" >
+    <div class="header-text">
+        <h1>{{ resumeData.name }}</h1>
+        <h2>{{ resumeData.jobTitle }}</h2>
+        <div class="contact-info">
+            <span>{{ resumeData.contact.location }}</span> |
+            <a href="http://{{ resumeData.contact.website }}" target="_blank">{{ resumeData.contact.website }}</a> |
+            <a href="https://{{ resumeData.contact.linkedin }}" target="_blank">{{ resumeData.contact.linkedin }}</a>
+        </div>
+    </div>
+</header>
+
+<main class="resume-content">
+    <section class="summary">
+        {% for paragraph in resumeData.summary %}
+            <p>{{ paragraph }}</p>
+        {% endfor %}
+    </section>
+
+    <section class="expertise">
+        <h3>Expertise</h3>
+        <div class="expertise-grid">
+            {% for item in resumeData.expertise %}
+                <div class="expertise-item">
+                    <strong>{{ item.skill }}</strong>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="experience">
+        <h3>Professional Experience</h3>
+        {% for job in resumeData.experience %}
+            <div class="job">
+                <div class="job-header">
+                    <h4>{{ job.title }} at {{ job.company }}</h4>
+                    <strong>{{ job.period }}</strong>
+                </div>
+                <div class="job-location">
+                    <em>{{ job.companyBrand }} - {{ job.location }}</em>
+                </div>
+                <p>{{ job.description }}</p>
+                {% if job.duties %}
+                    <ul>
+                        {% for duty in job.duties %}
+                            <li>{{ duty }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if job.roles %}
+                    {% for role in job.roles %}
+                        <div class="sub-role">
+                            <h5>{{ role.title }}</h5>
+                            <ul>
+                                {% for duty in role.duties %}
+                                    <li>{{ duty }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endfor %}
+    </section>
+
+    <section class="education">
+        <h3>Studies</h3>
+        {% for edu in resumeData.education %}
+            <div class="study-item">
+                <div class="study-header">
+                    <h4>{{ edu.degree }}</h4>
+                    <strong>{{ edu.period }}</strong>
+                </div>
+                <p><em>{{ edu.institution }} - {{ edu.location }}</em></p>
+                <ul>
+                    {% for note in edu.notes %}
+                        <li>{{ note }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+        {% for cert in resumeData.certifications %}
+            <div class="study-item">
+                 <div class="study-header">
+                    <h4>{{ cert.name }}</h4>
+                    <strong>{{ cert.period }}</strong>
+                </div>
+                <p><em>{{ cert.issuer }}</em></p>
+                <ul>
+                     {% for note in cert.notes %}
+                        <li>{{ note }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    </section>
+</main>
