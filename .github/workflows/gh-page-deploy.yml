@@ -30,7 +30,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site # The directory where Eleventy outputs the built site
+          path: public # The directory where Eleventy outputs the built site
 
       - name: Deploy to GitHub Pages
         id: deployment
